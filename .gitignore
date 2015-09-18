@@ -1,3 +1,5 @@
-.svn
-.metadata
-/.project
+# Librarian Puppet
+modules/
+.tmp/
+.librarian/
+Puppetfile.lock
