@@ -9,8 +9,8 @@ define eclipse (
   $default_version   = false,
   $package           = 'java',
   $release_name      = 'mars',
-  $service_release   = 'R',
-  $mirror            = 'http://mirror.switch.ch/ftp/mirror',
+  $service_release   = '1',
+  $mirror            = 'http://mirror.cc.columbia.edu/pub/software/eclipse',
   $set_default       = true,
   $wgettimeout       = 1800,
   $timeout           = 900,
@@ -21,6 +21,7 @@ define eclipse (
 ) {
 
   include eclipse::params
+
 
   $_install_path      = $install_path ?  {
     undef   => $eclipse::params::install_path,
@@ -52,7 +53,7 @@ define eclipse (
 
   $_basename     = "eclipse-${package}-${release_name}-${service_release}${_toolkit_suffix}${_arch_suffix}"
   $_filename     = "${_basename}.${_extension}"
-  $_url          = "${mirror}/eclipse/technology/epp/downloads/release/${release_name}/${service_release}/${_filename}"
+  $_url          = "${mirror}/technology/epp/downloads/release/${release_name}/${service_release}/${_filename}"
   $_extract_path = "${eclipse::params::tmp}/${_basename}"
 
   include archive
@@ -81,7 +82,14 @@ define eclipse (
     source  => "${_extract_path}/eclipse",
     ensure  => directory,
     recurse => true,
+    replace => false,
     require => Archive["${eclipse::params::tmp}/${_filename}"]
+  }
+
+  file{ $_application_path:
+    ensure  => file,
+    mode    => '0755',
+    require => File[$_installation_path]
   }
 
   if $_symlink_path != undef {
@@ -93,12 +101,13 @@ define eclipse (
 
     if $default_version and ! defined(Class['eclipse::default']) {
       class { 'eclipse::default':
-        #version           => $version,
         target            => $_symlink_path,
         desktop_file_path => $_desktop_file_path,
         symlink_to        => $_symlink_to,
         require           => File[$_symlink_path]
       }
+    } else {
+      fail("There is already a default version set for Eclipse IDE")
     }
   }
 
@@ -106,7 +115,7 @@ define eclipse (
     file { "${_desktop_file_path}/eclipse-${version}.desktop":
       ensure  => $ensure,
       content => template('eclipse/eclipse.desktop.erb'),
-      mode    => 644,
+      mode    => '0644',
       require => File[$_installation_path]
     }
   }
